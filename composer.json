@@ -1,7 +1,7 @@
 {
-    "name": "sypo/livex",
+    "name": "sypo/dutytax",
     "type": "project",
-    "description": "Livex API integration with Aero Commerce",
+    "description": "Handle product duty-paid price calculations on Aero Commerce",
     "homepage": "https://www.sypo.uk",
     "license": "MIT",
     "require": {
@@ -18,7 +18,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Sypo\\Livex\\": "src/"
+            "Sypo\\Dutytax\\": "src/"
         }
     },
     "extra": {
@@ -27,7 +27,7 @@
         },
         "laravel": {
             "providers": [
-                "Sypo\\Livex\\ServiceProvider"
+                "Sypo\\Dutytax\\Providers\\ServiceProvider"
             ]
         }
     }
