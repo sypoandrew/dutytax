@@ -1,0 +1,34 @@
+{
+    "name": "sypo/livex",
+    "type": "project",
+    "description": "Livex API integration with Aero Commerce",
+    "homepage": "https://www.sypo.uk",
+    "license": "MIT",
+    "require": {
+		"aerocommerce/admin": "^0",
+		"spatie/valuestore": "1.2.*"
+	},
+    "authors": [
+        {
+            "name": "Andrew Tanner",
+            "email": "andrew@sypo.uk",
+            "homepage": "http://www.sypo.uk",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Sypo\\Livex\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
+        },
+        "laravel": {
+            "providers": [
+                "Sypo\\Livex\\ServiceProvider"
+            ]
+        }
+    }
+}
