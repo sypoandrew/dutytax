@@ -19,7 +19,10 @@ class ModulesController extends Controller
      */
     public function index(Request $request)
     {
-        return view('modules.dutytax', $this->data);
+        $valuestore = Valuestore::make(storage_path('app/dutytax.json'));
+		$this->data['valuestore'] = $valuestore->all();
+		
+		return view('modules.dutytax', $this->data);
     }
     
 	/**
