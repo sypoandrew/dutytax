@@ -8,7 +8,7 @@ use Aero\Admin\Facades\Admin;
 use Aero\Admin\Http\Controllers\Controller;
 use Spatie\Valuestore\Valuestore;
 
-class ModulesController extends Controller
+class ModuleController extends Controller
 {
     protected $data = []; // the information we send to the view
 
@@ -22,7 +22,7 @@ class ModulesController extends Controller
         $valuestore = Valuestore::make(storage_path('app/dutytax.json'));
 		$this->data['valuestore'] = $valuestore->all();
 		
-		return view('modules.dutytax', $this->data);
+		return view('dutytax::dutytax', $this->data);
     }
     
 	/**

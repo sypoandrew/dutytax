@@ -38,6 +38,6 @@ class ServiceProvider extends ModuleServiceProvider
 		$valuestore->put('litre_calc', '9');
 
 		
-		#$this->loadViewsFrom(__DIR__ . '/../../resources/views/modules/dutytax/', 'dutytax');
+		$this->loadViewsFrom(__DIR__ . '/../../resources/views/', 'dutytax');
     }
 }

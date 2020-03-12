@@ -2,12 +2,12 @@
 
 @section('content')
     <div class="flex pb-2 mb-4">
-        <h2 class="flex-1 m-0 p-0">Liv-Ex</h2>
+        <h2 class="flex-1 m-0 p-0">Duty-paid price settings</h2>
     </div>
     @include('admin::partials.alerts')
 	<form action="{{ route('admin.modules.dutytax') }}" method="post" class="flex flex-wrap">
 		<div class="card mt-4 w-full">
-			<h3>Duty-paid rate settings</h3>
+			<h3>Duty-paid price settings</h3>
 			<div class="mt-4 w-full">
 			<label for="enabled" class="block">Enabled</label>
 			<input type="text" id="enabled" name="enabled" autocomplete="off" required="required" class="w-full " value="{{ setting('Dutytax.enabled') }}">

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Sypo\Dutytax\Http\Controllers\ModulesController;
+use Sypo\Dutytax\Http\Controllers\ModuleController;
 
-Route::get('dutytax', [ModulesController::class, 'index'])->name('admin.modules.dutytax');
-Route::post('dutytax', [ModulesController::class, 'update'])->name('admin.modules.dutytax');
+Route::get('dutytax', [ModuleController::class, 'index'])->name('admin.modules.dutytax');
+Route::post('dutytax', [ModuleController::class, 'update'])->name('admin.modules.dutytax');
