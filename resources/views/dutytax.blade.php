@@ -6,6 +6,7 @@
     </div>
     @include('admin::partials.alerts')
 	<form action="{{ route('admin.modules.dutytax') }}" method="post" class="flex flex-wrap">
+		@csrf
 		<div class="card mt-4 w-full">
 			<h3>Duty-paid price settings</h3>
 			<div class="mt-4 w-full">
