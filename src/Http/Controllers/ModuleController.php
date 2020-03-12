@@ -32,15 +32,29 @@ class ModuleController extends Controller
      */
     public function update(Request $request)
     {
+		$res = ['success'=>false,'data'=>false,'error'=>[]];
+		
+        $validator = \Validator::make($request->all(), [
+            'still_wine_rate' => 'required|numeric|between:0,99.99',
+            'sparkling_wine_rate' => 'required|numeric|between:0,99.99',
+            'fortified_wine_rate' => 'required|numeric|between:0,99.99',
+            'litre_calc' => 'required|int',
+        ]);
+		
+		if($validator->fails()){
+			$res['error'] = $validator->errors()->all();
+			return response()->json($res);
+		}
+		
 		$formdata = $request->json()->all();
 		Log::debug($formdata);
 		
 		/* $valuestore = Valuestore::make(storage_path('app/dutytax.json'));
-		$valuestore->put('enabled', '1');
-		$valuestore->put('still_wine_rate', '26.78');
-		$valuestore->put('sparkling_wine_rate', '34.30');
-		$valuestore->put('fortified_wine_rate', '35.70');
-		$valuestore->put('litre_calc', '9'); */
+		$valuestore->put('enabled', $formdata['enabled']);
+		$valuestore->put('still_wine_rate', $formdata['still_wine_rate']);
+		$valuestore->put('sparkling_wine_rate', $formdata['sparkling_wine_rate']);
+		$valuestore->put('fortified_wine_rate', $formdata['fortified_wine_rate']);
+		$valuestore->put('litre_calc', $formdata['litre_calc']); */
 		
 		
         return redirect(route('admin.modules.dutytax'));
