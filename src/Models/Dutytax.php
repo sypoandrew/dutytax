@@ -11,7 +11,13 @@ use Aero\Catalog\Models\Product;
 
 class Dutytax
 {
-	
+    /**
+     * Calculate the duty paid variant price
+     *
+     * @var int $id
+     * @var boolean $set_price
+     * @return null|float
+     */
     public static function calc_duty_paid_price($id, $set_price = false)
     {
 		Log::debug('in calc_duty_paid_price ' . $id);
@@ -99,6 +105,13 @@ class Dutytax
 		}
     }
 	
+    /**
+     * Calculate the literage of the product
+     *
+     * @var string $BottleSize
+     * @var int $PackSize
+     * @return float
+     */
 	public static function calc_bottle_unit($BottleSize, $PackSize){
 		//returns bottle size in litres
 		
