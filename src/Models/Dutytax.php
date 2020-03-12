@@ -5,92 +5,98 @@ namespace Sypo\Dutytax\Models;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use Spatie\Valuestore\Valuestore;
+use Aero\Catalog\Models\Variant;
+use Aero\Catalog\Models\Tag;
 use Aero\Catalog\Models\Product;
 
-class Dutytax extends Product
+class Dutytax
 {
 	
-    public function calc_duty_paid_price($id, $set_price = false)
+    public static function calc_duty_paid_price($id, $set_price = false)
     {
-		#Log::debug('in getDeliveredSellingPrice ' . $this->getId());
+		Log::debug('in calc_duty_paid_price ' . $id);
 		
-		$p = self::find($id);
-		
-		#need get the price of the in-bond variant here...
-		$in_bond_found = false;
-		$v = $p->variants();
-		foreach($v as $variant){
+		$variant = Variant::where('product_id', $id)->where('sku', 'like', '%IB')->first();
+		if($variant !== null){
+			Log::debug('found in-bond variant');
+			Log::debug($variant->toJson());
+			$price_det = $variant->getPriceForQuantity(1);
+			$price = $price_det->value_inc / 100; #price in Aero stored as integer
 			
-			$in_bond_found = true;
-		}
-		
-		if($in_bond_found){
-			$price = $this->getPrice();
 			
-			$attr = $p->attributes();
-			$tags = $p->getAllTagsAttribute();
+			$sku = $variant->sku;
+			$p = $variant->product()->first();
+			#Log::debug($p->toJson());
 			
-			$DutyStatus = strtoupper($_p->getAttributeText('duty_status'));
-			$BottleSize = $_p->getAttributeText('bottle_size');
-			$PackSize = $_p->getAttributeText('pack_size');
-			$WineType = strtolower($_p->getAttributeText('wine_type'));
+			$tags = Product::select('tag_groups.name as tag_group', 'tags.name as value')->join('product_tag', 'product_tag.product_id', '=', 'products.id')->join('tags', 'tags.id', '=', 'product_tag.tag_id')->join('tag_groups', 'tag_groups.id', '=', 'tags.tag_group_id')->where('products.id', $id)->where(function($q){
+				$q->where(function($q){
+					$q->where('tag_groups.name', 'like', '%Bottle Size%');
+				});
+				$q->orWhere(function($q){
+					$q->where('tag_groups.name', 'like', '%Case Size%');
+				});
+				$q->orWhere(function($q){
+					$q->where('tag_groups.name', 'like', '%Wine Type%');
+				});
+			})->get();
+			#dd($tags->get());
+			$arr = [];
+			foreach($tags as $t){
+				$tag_group = json_decode($t->tag_group);
+				$tag_value = json_decode($t->value);
+				$arr[$tag_group->en] = $tag_value->en;
+			}
+			Log::debug($arr);
+			
+			$BottleSize = $arr['Bottle Size'];
+			$PackSize = $arr['Case Size'];
+			#$WineType = strtolower($arr['Wine Type']);
+			$WineType = '';
 			
 			$TotalCaseLitres = self::calc_bottle_unit($BottleSize, $PackSize);
 
-			#Log::debug('duty_status:'. $DutyStatus .' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $price .' | TotalCaseLitres:'.  $TotalCaseLitres );
+			Log::debug($sku. ' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $price .' | TotalCaseLitres:'.  $TotalCaseLitres );
 			
 			$deliveredPrice = $price;
 			
+			//catch all - assume IB
+			#Log::debug("assume IB");
 			
-			if($DutyStatus == 'EX'){
-				
-				//just add the VAT
-				
-				$deliveredPrice = $price;
+			$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
+			
+			$rate = 0;
+			if($WineType == 'sparkling'){
+				$rate = $valuestore->get('sparkling_wine_rate');
 			}
-			elseif($DutyStatus == 'DP'){
-				
-				//duty already paid
-				
-				$deliveredPrice = $price;
+			elseif($WineType == 'fortified'){
+				$rate = $valuestore->get('fortified_wine_rate');
 			}
 			else{
-				//catch all - assume IB
-				#Log::debug("assume IB");
-				
-				$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
-				
-				$rate = 0;
-				if($WineType == 'sparkling'){
-					$rate = $valuestore->get('sparkling_wine_rate');
-				}
-				elseif($WineType == 'fortified'){
-					$rate = $valuestore->get('fortified_wine_rate');
-				}
-				else{
-					//catch all- assume still wine
-					$rate = $valuestore->get('still_wine_rate');
-				}
-				
-				$litre_calc = $valuestore->get('litre_calc');
-				
-				#Log::debug("rate $rate litre_calc $litre_calc");
-				
-				$rate_per_litre = $rate / $litre_calc;
-				
-				$duty = $TotalCaseLitres * $rate_per_litre;
-				
-				#Log::debug("duty $duty");
-				
-				$deliveredPrice += $duty;
+				//catch all- assume still wine
+				$rate = $valuestore->get('still_wine_rate');
 			}
 			
+			$litre_calc = $valuestore->get('litre_calc');
+			
+			#Log::debug("rate $rate litre_calc $litre_calc");
+			
+			$rate_per_litre = $rate / $litre_calc;
+			
+			$duty = $TotalCaseLitres * $rate_per_litre;
+			
+			#Log::debug("duty $duty");
+			
+			$deliveredPrice += $duty;
+			
 			$deliveredPrice = number_format($deliveredPrice, 2, ".", ",");
-			#Log::debug("deliveredPrice $deliveredPrice");
+			Log::debug("deliveredPrice $deliveredPrice");
 			
 			return $deliveredPrice;
 		}
-		return;
+		else{
+			Log::debug('NOT found variant');
+			return;
+		}
     }
 	
 	public static function calc_bottle_unit($BottleSize, $PackSize){

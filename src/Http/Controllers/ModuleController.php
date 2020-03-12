@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Aero\Admin\Facades\Admin;
 use Aero\Admin\Http\Controllers\Controller;
 use Spatie\Valuestore\Valuestore;
+use Sypo\Dutytax\Models\Dutytax;
 
 class ModuleController extends Controller
 {
@@ -21,6 +22,8 @@ class ModuleController extends Controller
     {
         $valuestore = Valuestore::make(storage_path('app/dutytax.json'));
 		$this->data['valuestore'] = $valuestore->all();
+		
+		$duty_price = Dutytax::calc_duty_paid_price(19);
 		
 		return view('dutytax::dutytax', $this->data);
     }
