@@ -23,8 +23,6 @@ class ModuleController extends Controller
         $valuestore = Valuestore::make(storage_path('app/dutytax.json'));
 		$this->data['valuestore'] = $valuestore->all();
 		
-		$duty_price = Dutytax::calc_duty_paid_price(19);
-		
 		return view('dutytax::dutytax', $this->data);
     }
     
