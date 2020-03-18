@@ -8,9 +8,50 @@ use Spatie\Valuestore\Valuestore;
 use Aero\Catalog\Models\Variant;
 use Aero\Catalog\Models\Tag;
 use Aero\Catalog\Models\Product;
+use Aero\Catalog\Models\Attribute;
+use Aero\Common\Models\Currency;
 
 class Dutytax
 {
+    /**
+     * @var string
+     */
+    protected $language;
+    protected $attributes;
+    protected $currency;
+	
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->language = config('app.locale');
+        $this->currency = Currency::where('code', 'GBP')->first();
+	}
+	
+    /**
+     * Get Attribute in array format
+     *
+     * @return array
+     */
+    public function get_attributes()
+    {
+		if($this->attributes){
+			return $this->attributes;
+		}
+		
+		$this->attributes = [];
+		$attributes = Attribute::select('id', 'name')->get();
+		foreach($attributes as $a){
+			$this->attributes[$a->name] = $a->id;
+		}
+		
+		return $this->attributes;
+	}
+	
     /**
      * Calculate the duty paid variant price
      *
@@ -18,81 +59,121 @@ class Dutytax
      * @var boolean $set_price
      * @return null|float
      */
-    public static function calc_duty_paid_price(\Aero\Catalog\Models\Variant $variant, $set_price = false)
+    public function calc_duty_paid_price(\Aero\Catalog\Models\Variant $variant, $set_price = false)
     {
-		Log::debug($variant->toJson());
-		$price_det = $variant->getPriceForQuantity(1);
-		$price = $price_det->value_inc / 100; #price in Aero stored as integer
-		
-		
+		#Log::debug($variant->toJson());
 		$sku = $variant->sku;
-		$p = $variant->product()->first();
-		#Log::debug($p->toJson());
 		
-		$tags = Product::select('tag_groups.name as tag_group', 'tags.name as value')->join('product_tag', 'product_tag.product_id', '=', 'products.id')->join('tags', 'tags.id', '=', 'product_tag.tag_id')->join('tag_groups', 'tag_groups.id', '=', 'tags.tag_group_id')->where('products.id', $variant->product_id)->where(function($q){
-			$q->where(function($q){
-				$q->where('tag_groups.name', 'like', '%Bottle Size%');
-			});
-			$q->orWhere(function($q){
-				$q->where('tag_groups.name', 'like', '%Case Size%');
-			});
-			$q->orWhere(function($q){
-				$q->where('tag_groups.name', 'like', '%Wine Type%');
-			});
-		})->get();
-		#dd($tags->get());
-		$arr = [];
-		foreach($tags as $t){
-			$tag_group = json_decode($t->tag_group);
-			$tag_value = json_decode($t->value);
-			$arr[$tag_group->en] = $tag_value->en;
-		}
-		Log::debug($arr);
+		$attr = $this->get_attributes();
 		
-		$BottleSize = $arr['Bottle Size'];
-		$PackSize = $arr['Case Size'];
-		#$WineType = strtolower($arr['Wine Type']);
-		$WineType = '';
-		
-		$TotalCaseLitres = self::calc_bottle_unit($BottleSize, $PackSize);
+		$price_det = $variant->getPriceForQuantity(1);
+		if($price_det){
+			$bond_price = $price_det->value_inc; #price in Aero stored as integer
+			
+			$tags = Product::select('tag_groups.name as tag_group', 'tags.name as value')->join('product_tag', 'product_tag.product_id', '=', 'products.id')->join('tags', 'tags.id', '=', 'product_tag.tag_id')->join('tag_groups', 'tag_groups.id', '=', 'tags.tag_group_id')->where('products.id', $variant->product_id)->whereIn("tag_groups.name->{$this->language}", ['Bottle Size', 'Case Size', 'Wine Type'])->get();
+			#dd($tags->get());
+			$arr = [];
+			foreach($tags as $t){
+				$tag_group = json_decode($t->tag_group);
+				$tag_value = json_decode($t->value);
+				$arr[$tag_group->en] = $tag_value->en;
+			}
+			#Log::debug($arr);
+			
+			if(isset($arr['Bottle Size']) and isset($arr['Case Size'])){
+				$BottleSize = $arr['Bottle Size'];
+				$PackSize = $arr['Case Size'];
+				$WineType = (isset($arr['Wine Type'])) ? $arr['Wine Type'] : '';
+				
+				$TotalCaseLitres = self::calc_bottle_unit($BottleSize, $PackSize);
 
-		Log::debug($sku. ' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $price .' | TotalCaseLitres:'.  $TotalCaseLitres );
-		
-		$deliveredPrice = $price;
-		
-		//catch all - assume IB
-		#Log::debug("assume IB");
-		
-		$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
-		
-		$rate = 0;
-		if($WineType == 'sparkling'){
-			$rate = $valuestore->get('sparkling_wine_rate');
-		}
-		elseif($WineType == 'fortified'){
-			$rate = $valuestore->get('fortified_wine_rate');
+				Log::debug($sku. ' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $bond_price .' | TotalCaseLitres:'.  $TotalCaseLitres );
+				
+				$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
+				
+				$rate = 0;
+				if($WineType == 'Sparkling'){
+					$rate = $valuestore->get('sparkling_wine_rate');
+				}
+				elseif($WineType == 'Fortified'){
+					$rate = $valuestore->get('fortified_wine_rate');
+				}
+				else{
+					//catch all- assume still wine
+					$rate = $valuestore->get('still_wine_rate');
+				}
+				
+				$litre_calc = $valuestore->get('litre_calc');
+				
+				#Log::debug("rate $rate litre_calc $litre_calc");
+				
+				$rate_per_litre = $rate / $litre_calc;
+				
+				$duty = ($TotalCaseLitres * $rate_per_litre) * 100; # Aero stores price as int
+				$dutypaid = $bond_price + $duty;
+				
+				#$dutypaid = number_format($deliveredPrice, 2, ".", ",");
+				Log::debug("$sku bond price $bond_price");
+				Log::debug("$sku duty $duty");
+				Log::debug("$sku duty paid $dutypaid");
+				
+				$dp = Variant::where('sku', str_replace('IB', 'DP', $variant->sku))->first();
+				if($dp !== null){
+					$dpprice = $dp->getPriceForQuantity(1)->value_inc;
+					Log::debug("$sku current dp price $dpprice");
+					
+					if($set_price){
+						if($dpprice != $dutypaid){
+							$dpprice->value = $dutypaid;
+							$dpprice->save();
+						}
+					}
+				}
+				else{
+					if($set_price){
+						#create DP item
+						
+						$dp = new Variant;
+						$dp->product_id = $variant->product_id;
+						$dp->stock_level = $variant->stock_level;
+						$dp->minimum_quantity = $variant->minimum_quantity;
+						$dp->sku = str_replace('IB', 'DP', $variant->sku);
+						if($dp->save()){
+							$dp->attributes()->syncWithoutDetaching([$attr['Duty Paid'] => ['sort' => $dp->attributes()->count()]]);
+							
+							#add the variant price
+							$duty_price = new Price([
+								'variant_id' => $dp->product_id,
+								'product_tax_group_id' => $dp->product_tax_group_id,
+								'product_id' => $dp->product_id,
+								'quantity' => 1,
+								'currency_code' => $this->currency->code,
+							]);
+							
+							$duty_price->value = $market['depth']['offers']['offer'][0]['price'] * 100;
+							
+							if($duty_price->save()){
+								Log::debug('variant price created successfully');
+							}
+							else{
+								Log::debug('variant price failed to create');
+							}
+							
+						}
+					}
+				}
+				
+				return $dutypaid;
+			}
+			else{
+				#Log::warning("SKU $sku missing data to calculate Duty Paid price");
+			}
 		}
 		else{
-			//catch all- assume still wine
-			$rate = $valuestore->get('still_wine_rate');
+			#Log::warning("SKU $sku missing price data");
 		}
 		
-		$litre_calc = $valuestore->get('litre_calc');
-		
-		#Log::debug("rate $rate litre_calc $litre_calc");
-		
-		$rate_per_litre = $rate / $litre_calc;
-		
-		$duty = $TotalCaseLitres * $rate_per_litre;
-		
-		#Log::debug("duty $duty");
-		
-		$deliveredPrice += $duty;
-		
-		$deliveredPrice = number_format($deliveredPrice, 2, ".", ",");
-		Log::debug("deliveredPrice $deliveredPrice");
-		
-		return $deliveredPrice;
+		return;
     }
 	
     /**
