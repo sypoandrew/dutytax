@@ -30,12 +30,12 @@ class ServiceProvider extends ModuleServiceProvider
             $group->integer('litre_calc')->default(9);
         });
 		
-		$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
-		$valuestore->put('enabled', '1');
-		$valuestore->put('still_wine_rate', '26.78');
-		$valuestore->put('sparkling_wine_rate', '34.30');
-		$valuestore->put('fortified_wine_rate', '35.70');
-		$valuestore->put('litre_calc', '9');
+		#$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
+		#$valuestore->put('enabled', '1');
+		#$valuestore->put('still_wine_rate', '26.78');
+		#$valuestore->put('sparkling_wine_rate', '34.30');
+		#$valuestore->put('fortified_wine_rate', '35.70');
+		#$valuestore->put('litre_calc', '9');
 
 		
 		$this->loadViewsFrom(__DIR__ . '/../../resources/views/', 'dutytax');

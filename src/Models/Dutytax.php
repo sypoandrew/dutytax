@@ -89,21 +89,25 @@ class Dutytax
 
 				Log::debug($sku. ' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $bond_price .' | TotalCaseLitres:'.  $TotalCaseLitres );
 				
-				$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
+				#$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
 				
 				$rate = 0;
 				if($WineType == 'Sparkling'){
-					$rate = $valuestore->get('sparkling_wine_rate');
+					#$rate = $valuestore->get('sparkling_wine_rate');
+					$rate = setting('Dutytax.sparkling_wine_rate');
 				}
 				elseif($WineType == 'Fortified'){
-					$rate = $valuestore->get('fortified_wine_rate');
+					#$rate = $valuestore->get('fortified_wine_rate');
+					$rate = setting('Dutytax.fortified_wine_rate');
 				}
 				else{
 					//catch all- assume still wine
-					$rate = $valuestore->get('still_wine_rate');
+					#$rate = $valuestore->get('still_wine_rate');
+					$rate = setting('Dutytax.still_wine_rate');
 				}
 				
-				$litre_calc = $valuestore->get('litre_calc');
+				#$litre_calc = $valuestore->get('litre_calc');
+				$litre_calc = setting('Dutytax.litre_calc');
 				
 				#Log::debug("rate $rate litre_calc $litre_calc");
 				
