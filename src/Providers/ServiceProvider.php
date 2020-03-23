@@ -11,6 +11,10 @@ use Spatie\Valuestore\Valuestore;
 
 class ServiceProvider extends ModuleServiceProvider
 {
+    protected $commands = [
+        'Sypo\Dutytax\Console\Commands\Calculate',
+    ];
+    
     public function register(): void 
     {
         AdminModule::create('Dutytax')
@@ -18,6 +22,8 @@ class ServiceProvider extends ModuleServiceProvider
             ->summary('Duty Tax settings for product variant price calculations')
             ->routes(__DIR__ .'/../../routes/admin.php')
             ->route('admin.modules.dutytax');
+        
+        $this->commands($this->commands);
     }
 	
     public function boot(): void 

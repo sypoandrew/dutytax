@@ -6,14 +6,14 @@ use Illuminate\Console\Command;
 use Aero\Catalog\Models\Variant;
 use Sypo\Dutytax\Models\Dutytax;
 
-class DutyTax extends Command
+class Calculate extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'dutytax:calculate';
+    protected $signature = 'sypo:dutytax:calculate';
 
     /**
      * The console command description.
