@@ -133,6 +133,8 @@ class Dutytax
 					}
 				}
 				else{
+					Log::debug('create duty paid variant for '.str_replace('IB', 'DP', $inbond_variant->sku));
+					
 					if($set_price){
 						#create DP item
 						
@@ -159,8 +161,11 @@ class Dutytax
 								Log::debug('variant price created successfully');
 							}
 							else{
-								Log::debug('variant price failed to create');
+								Log::warning('variant price failed to create');
 							}
+						}
+						else{
+							Log::warning('duty paid variant failed to create');
 						}
 					}
 				}
