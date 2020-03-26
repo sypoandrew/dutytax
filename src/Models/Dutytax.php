@@ -10,6 +10,7 @@ use Aero\Catalog\Models\Tag;
 use Aero\Catalog\Models\Product;
 use Aero\Catalog\Models\Attribute;
 use Aero\Common\Models\Currency;
+use Aero\Common\Models\TaxRate;
 
 class Dutytax
 {
@@ -19,6 +20,7 @@ class Dutytax
     protected $language;
     protected $attributes;
     protected $currency;
+    protected $vat_rate;
 	
 
     /**
@@ -30,6 +32,7 @@ class Dutytax
     {
         $this->language = config('app.locale');
         $this->currency = Currency::where('code', 'GBP')->first();
+        $this->vat_rate = TaxRate::where('name', 'like', '%VAT%')->first()->rate;
 	}
 	
     /**
@@ -114,7 +117,7 @@ class Dutytax
 				$rate_per_litre = $rate / $litre_calc;
 				
 				$duty = ($TotalCaseLitres * $rate_per_litre) * 100; # Aero stores price as int
-				$dutypaid = $bond_price + $duty;
+				$dutypaid = ($bond_price + $duty) * (1 + ($this->vat_rate / 100));
 				
 				#$dutypaid = number_format($deliveredPrice, 2, ".", ",");
 				Log::debug("$sku bond price $bond_price");
@@ -142,6 +145,7 @@ class Dutytax
 						$dp->product_id = $inbond_variant->product_id;
 						$dp->stock_level = $inbond_variant->stock_level;
 						$dp->minimum_quantity = $inbond_variant->minimum_quantity;
+						$dp->product_tax_group_id = 1; #taxable
 						$dp->sku = str_replace('IB', 'DP', $inbond_variant->sku);
 						if($dp->save()){
 							$dp->attributes()->syncWithoutDetaching([$attr['Duty Paid'] => ['sort' => $dp->attributes()->count()]]);
