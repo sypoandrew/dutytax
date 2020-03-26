@@ -59,18 +59,18 @@ class Dutytax
      * @var boolean $set_price
      * @return null|float
      */
-    public function calc_duty_paid_price(\Aero\Catalog\Models\Variant $variant, $set_price = false)
+    public function calc_duty_paid_price(\Aero\Catalog\Models\Variant $inbond_variant, $set_price = false)
     {
-		#Log::debug($variant->toJson());
-		$sku = $variant->sku;
+		#Log::debug($inbond_variant->toJson());
+		$sku = $inbond_variant->sku;
 		
 		$attr = $this->get_attributes();
 		
-		$price_det = $variant->getPriceForQuantity(1);
+		$price_det = $inbond_variant->getPriceForQuantity(1);
 		if($price_det){
 			$bond_price = $price_det->value_inc; #price in Aero stored as integer
 			
-			$tags = Product::select('tag_groups.name as tag_group', 'tags.name as value')->join('product_tag', 'product_tag.product_id', '=', 'products.id')->join('tags', 'tags.id', '=', 'product_tag.tag_id')->join('tag_groups', 'tag_groups.id', '=', 'tags.tag_group_id')->where('products.id', $variant->product_id)->whereIn("tag_groups.name->{$this->language}", ['Bottle Size', 'Case Size', 'Wine Type'])->get();
+			$tags = Product::select('tag_groups.name as tag_group', 'tags.name as value')->join('product_tag', 'product_tag.product_id', '=', 'products.id')->join('tags', 'tags.id', '=', 'product_tag.tag_id')->join('tag_groups', 'tag_groups.id', '=', 'tags.tag_group_id')->where('products.id', $inbond_variant->product_id)->whereIn("tag_groups.name->{$this->language}", ['Bottle Size', 'Case Size', 'Wine Type'])->get();
 			#dd($tags->get());
 			$arr = [];
 			foreach($tags as $t){
@@ -121,16 +121,15 @@ class Dutytax
 				Log::debug("$sku duty $duty");
 				Log::debug("$sku duty paid $dutypaid");
 				
-				$dp = Variant::where('sku', str_replace('IB', 'DP', $variant->sku))->first();
+				$dp = Variant::where('sku', str_replace('IB', 'DP', $inbond_variant->sku))->first();
 				if($dp !== null){
-					$dpprice = $dp->getPriceForQuantity(1)->value_inc;
-					Log::debug("$sku current dp price $dpprice");
+					#found current duty paid variant - get the price object
+					$dpprice = $dp->getPriceForQuantity(1);
+					Log::debug("$sku current dp price {$dpprice->value_inc}");
 					
-					if($set_price){
-						if($dpprice != $dutypaid){
-							$dpprice->value = $dutypaid;
-							$dpprice->save();
-						}
+					if($set_price and $dpprice->value_inc != $dutypaid){
+						$dpprice->value = $dutypaid;
+						$dpprice->save();
 					}
 				}
 				else{
@@ -138,10 +137,10 @@ class Dutytax
 						#create DP item
 						
 						$dp = new Variant;
-						$dp->product_id = $variant->product_id;
-						$dp->stock_level = $variant->stock_level;
-						$dp->minimum_quantity = $variant->minimum_quantity;
-						$dp->sku = str_replace('IB', 'DP', $variant->sku);
+						$dp->product_id = $inbond_variant->product_id;
+						$dp->stock_level = $inbond_variant->stock_level;
+						$dp->minimum_quantity = $inbond_variant->minimum_quantity;
+						$dp->sku = str_replace('IB', 'DP', $inbond_variant->sku);
 						if($dp->save()){
 							$dp->attributes()->syncWithoutDetaching([$attr['Duty Paid'] => ['sort' => $dp->attributes()->count()]]);
 							
@@ -154,7 +153,7 @@ class Dutytax
 								'currency_code' => $this->currency->code,
 							]);
 							
-							$duty_price->value = $market['depth']['offers']['offer'][0]['price'] * 100;
+							$duty_price->value = $dutypaid;
 							
 							if($duty_price->save()){
 								Log::debug('variant price created successfully');
@@ -162,7 +161,6 @@ class Dutytax
 							else{
 								Log::debug('variant price failed to create');
 							}
-							
 						}
 					}
 				}

@@ -41,7 +41,8 @@ class Calculate extends Command
     {
         $variants = Variant::where('sku', 'like', '%IB')->get();
 		foreach($variants as $variant){
-			Dutytax::calc_duty_paid_price($variant);
+			$d = new Dutytax;
+			$d->calc_duty_paid_price($variant);
 		}
     }
 }
