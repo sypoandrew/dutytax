@@ -5,6 +5,7 @@ namespace Sypo\Dutytax\Console\Commands;
 use Illuminate\Console\Command;
 use Aero\Catalog\Models\Variant;
 use Sypo\Dutytax\Models\Dutytax;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class Calculate extends Command
 {
@@ -40,9 +41,16 @@ class Calculate extends Command
     public function handle()
     {
         $variants = Variant::where('sku', 'like', '%IB')->get();
+		
+        $progressBar = new ProgressBar($this->output, $variants->count());
+		
 		foreach($variants as $variant){
 			$d = new Dutytax;
 			$d->calc_duty_paid_price($variant);
+			
+			$progressBar->advance();
 		}
+		
+		$progressBar->finish();
     }
 }

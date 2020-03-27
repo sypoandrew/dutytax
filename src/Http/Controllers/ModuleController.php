@@ -20,8 +20,8 @@ class ModuleController extends Controller
      */
     public function index(Request $request)
     {
-        $valuestore = Valuestore::make(storage_path('app/dutytax.json'));
-		$this->data['valuestore'] = $valuestore->all();
+        #$valuestore = Valuestore::make(storage_path('app/dutytax.json'));
+		#$this->data['valuestore'] = $valuestore->all();
 		
 		return view('dutytax::dutytax', $this->data);
     }
