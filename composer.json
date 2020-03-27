@@ -6,7 +6,7 @@
     "license": "MIT",
     "require": {
 		"aerocommerce/admin": "^0",
-		"spatie/valuestore": "1.2.*"
+        "guzzlehttp/guzzle": "6.5.*"
 	},
     "authors": [
         {
