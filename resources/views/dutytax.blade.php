@@ -2,7 +2,10 @@
 
 @section('content')
     <div class="flex pb-2 mb-4">
-        <h2 class="flex-1 m-0 p-0">Duty-paid price settings</h2>
+        <h2 class="flex-1 m-0 p-0">
+		<a href="{{ route('admin.modules') }}" class="btn mr-4">&#171; Back</a>
+		<span class="flex-1">Duty-paid price settings</span>
+		</h2>
     </div>
     @include('admin::partials.alerts')
 	<form action="{{ route('admin.modules.dutytax') }}" method="post" class="flex flex-wrap">
