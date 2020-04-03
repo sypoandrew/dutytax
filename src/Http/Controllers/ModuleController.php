@@ -46,6 +46,6 @@ class ModuleController extends Controller
 		$formdata = $request->json()->all();
 		Log::debug($formdata);
 		
-        return redirect(route('admin.modules.dutytax'));
+        return redirect()->back()->with('message', 'Settings updated.');
     }
 }
