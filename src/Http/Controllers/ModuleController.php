@@ -48,4 +48,16 @@ class ModuleController extends Controller
 		
         return redirect()->back()->with('message', 'Settings updated.');
     }
+    
+	/**
+     * Duty Paid calculator
+     *
+     * @return void
+     */
+    public function calculate(Request $request)
+    {
+    	\Artisan::call('dutytax:calculate');
+		
+		return redirect()->back()->with('message', 'You have successfully run the Duty Paid calculator.');
+    }
 }

@@ -123,6 +123,11 @@ class Dutytax
 					$dpprice = $dp->getPriceForQuantity(1);
 					Log::debug("$sku current dp price {$dpprice->value_inc}");
 					
+					if($dp->stock_level != $inbond_variant->stock_level){
+						$dp->stock_level = $inbond_variant->stock_level;
+						$dp->save();
+					}
+					
 					if($set_price and $dpprice->value_inc != $dutypaid){
 						$dpprice->value = $dutypaid;
 						$dpprice->save();

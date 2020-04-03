@@ -45,4 +45,17 @@
 		<div class="card mt-4 p-4 w-full flex flex-wrap"><button type="submit" class="btn btn-secondary">Save</button> </div>
 	</form>
 		
+	
+	
+	<form action="{{ route('admin.modules.dutytax.calculate') }}" method="get" class="flex flex-wrap mb-8">
+		@csrf
+		
+		<div class="card mt-4 p-4 w-full flex flex-wrap">
+			<h3 class="w-full">Calculate Duty Paid prices</h3>
+			<p><strong>NOTE:</strong> this is run via an automated routine every X minutes. Press the button below to run the routine manually.</p>
+		</div>
+		<div class="card mt-4 p-4 w-full flex flex-wrap">
+			<button type="submit" class="btn btn-secondary">Process</button>
+		</div>
+	</form>
 @endsection
