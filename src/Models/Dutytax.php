@@ -4,6 +4,8 @@ namespace Sypo\Dutytax\Models;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Aero\Catalog\Events\ProductCreated;
+use Aero\Catalog\Events\ProductUpdated;
 use Aero\Catalog\Models\Variant;
 use Aero\Catalog\Models\Tag;
 use Aero\Catalog\Models\Product;
@@ -234,4 +236,47 @@ class Dutytax
 		
 		return $units;
 	}
+
+    /**
+     * Add a product to the queue to be indexed.
+     *
+     * @param $product
+     */
+    protected function addToProducts($product): void
+    {
+        if ($product) {
+            if ($product->wasRecentlyCreated) {
+                $product->wasRecentlyCreated = false;
+                $this->products['created'][$product->id] = $product;
+            } else {
+                $this->products['updated'][$product->id] = $product;
+            }
+        }
+    }
+
+    /**
+     * Check stored products to index.
+     *
+     * @param bool $force
+     */
+    protected function checkIndexing($force = false): void
+    {
+        if ($force || count($this->products['created']) > 5) {
+            foreach ($this->products['created'] as $key => $product) {
+                event(new ProductCreated($product));
+                unset($this->products['created'][$key]);
+            }
+
+            $this->products['created'] = [];
+        }
+
+        if ($force || count($this->products['updated']) > 5) {
+            foreach ($this->products['updated'] as $key => $product) {
+                event(new ProductUpdated($product));
+                unset($this->products['updated'][$key]);
+            }
+
+            $this->products['updated'] = [];
+        }
+    }
 }

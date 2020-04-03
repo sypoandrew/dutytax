@@ -56,7 +56,7 @@ class ModuleController extends Controller
      */
     public function calculate(Request $request)
     {
-    	\Artisan::call('dutytax:calculate');
+    	\Artisan::call('sypo:dutytax:calculate');
 		
 		return redirect()->back()->with('message', 'You have successfully run the Duty Paid calculator.');
     }
