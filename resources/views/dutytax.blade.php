@@ -15,7 +15,11 @@
 			<div class="mt-4 w-full">
 			<label for="enabled" class="block">
 			<label class="checkbox">
+			@if(setting('Dutytax.enabled'))
+			<input type="checkbox" id="enabled" name="enabled" checked="checked" value="1">
+			@else
 			<input type="checkbox" id="enabled" name="enabled" value="1">
+			@endif
 			<span></span>
 			</label>Enabled
 			</label>
