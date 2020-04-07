@@ -52,8 +52,8 @@ class Calculate extends Command
 		#force reindexing
 		$d->checkIndexing(true);
 		
-		$this->info('Process complete');
-		
 		$progressBar->finish();
+		
+		$this->info('Process complete');
     }
 }
