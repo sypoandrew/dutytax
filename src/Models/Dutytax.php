@@ -8,6 +8,7 @@ use Aero\Catalog\Events\ProductCreated;
 use Aero\Catalog\Events\ProductUpdated;
 use Aero\Catalog\Models\Variant;
 use Aero\Catalog\Models\Tag;
+use Aero\Catalog\Models\Price;
 use Aero\Catalog\Models\Product;
 use Aero\Catalog\Models\Attribute;
 use Aero\Common\Models\Currency;
@@ -68,10 +69,12 @@ class Dutytax
      * @var boolean $set_price
      * @return null|float
      */
-    public function calc_duty_paid_price(\Aero\Catalog\Models\Variant $inbond_variant, $set_price = false)
+    public function calc_duty_paid_price(\Aero\Catalog\Models\Variant $inbond_variant, $set_price = true)
     {
 		#Log::debug($inbond_variant->toJson());
 		$sku = $inbond_variant->sku;
+		
+		$add_to_indexing = false;
 		
 		$attr = $this->get_attributes();
 		
@@ -96,7 +99,7 @@ class Dutytax
 				
 				$TotalCaseLitres = self::calc_bottle_unit($BottleSize, $PackSize);
 
-				Log::debug($sku. ' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $bond_price .' | TotalCaseLitres:'.  $TotalCaseLitres );
+				#Log::debug($sku. ' | bottle_size:'.  $BottleSize .' | wine_type:'.  $WineType .' | pack_size:'.  $PackSize .' | price:'.  $bond_price .' | TotalCaseLitres:'.  $TotalCaseLitres );
 				
 				$rate = 0;
 				if($WineType == 'Sparkling'){
@@ -118,30 +121,64 @@ class Dutytax
 				
 				$duty = ($TotalCaseLitres * $rate_per_litre) * 100; # Aero stores price as int
 				$dutypaid = ($bond_price + $duty) * (1 + ($this->vat_rate / 100));
+				$dutypaid = round($dutypaid, 1);
 				
 				#$dutypaid = number_format($deliveredPrice, 2, ".", ",");
-				Log::debug("$sku bond price $bond_price");
-				Log::debug("$sku duty $duty");
-				Log::debug("$sku duty paid $dutypaid");
+				#Log::debug("$sku bond price $bond_price");
+				#Log::debug("$sku duty $duty");
+				#Log::debug("$sku duty paid $dutypaid");
 				
 				$dp = Variant::where('sku', str_replace('IB', 'DP', $inbond_variant->sku))->first();
 				if($dp !== null){
 					#found current duty paid variant - get the price object
 					$dpprice = $dp->getPriceForQuantity(1);
-					Log::debug("$sku current dp price {$dpprice->value_inc}");
-					
-					if($dp->stock_level != $inbond_variant->stock_level){
-						$dp->stock_level = $inbond_variant->stock_level;
-						$dp->save();
+					if($dpprice !== null){
+						#Log::debug("$sku current dp price {$dpprice->value_inc}");
+						
+						if($dp->stock_level != $inbond_variant->stock_level){
+							$dp->stock_level = $inbond_variant->stock_level;
+							$dp->save();
+							
+							$add_to_indexing = true;
+						}
+						
+						if($set_price and (float) $dpprice->value_inc != (float) $dutypaid){
+							$dpprice->value = $dutypaid;
+							$dpprice->save();
+							#dd("{$dpprice->value_inc} != {$dutypaid}");
+							
+							$add_to_indexing = true;
+						}
 					}
-					
-					if($set_price and $dpprice->value_inc != $dutypaid){
-						$dpprice->value = $dutypaid;
-						$dpprice->save();
+					else{
+						#we shouldn't really be here, but create price anyways...
+						dd($dp);
+						#create the qty price
+						if($set_price){
+							
+							#add the variant price
+							$duty_price = new Price([
+								'variant_id' => $dp->product_id,
+								'product_tax_group_id' => $dp->product_tax_group_id,
+								'product_id' => $dp->product_id,
+								'quantity' => 1,
+								'currency_code' => $this->currency->code,
+							]);
+							
+							$duty_price->value = $dutypaid;
+							
+							if($duty_price->save()){
+								#Log::debug('variant price for '.$dp->sku.' created successfully');
+								$add_to_indexing = true;
+							}
+							else{
+								Log::warning('variant price for '.$dp->sku.' failed to create');
+							}
+						}
 					}
 				}
 				else{
-					Log::debug('create duty paid variant for '.str_replace('IB', 'DP', $inbond_variant->sku));
+					#Log::debug('create duty paid variant for '.str_replace('IB', 'DP', $inbond_variant->sku));
 					
 					if($set_price){
 						#create DP item
@@ -167,11 +204,13 @@ class Dutytax
 							$duty_price->value = $dutypaid;
 							
 							if($duty_price->save()){
-								Log::debug('variant price created successfully');
+								#Log::debug('variant price created successfully');
 							}
 							else{
 								Log::warning('variant price failed to create');
 							}
+							
+							$add_to_indexing = true;
 						}
 						else{
 							Log::warning('duty paid variant failed to create');
@@ -179,8 +218,10 @@ class Dutytax
 					}
 				}
 				
-				$p = $dp->product()->first();
-				$this->addToProducts($p);
+				if($set_price and $add_to_indexing){
+					$p = $dp->product()->first();
+					$this->addToProducts($p);
+				}
 				
 				return $dutypaid;
 			}
@@ -267,7 +308,7 @@ class Dutytax
      *
      * @param bool $force
      */
-    protected function checkIndexing($force = false): void
+    public function checkIndexing($force = false): void
     {
         if ($force || count($this->products['created']) > 5) {
             foreach ($this->products['created'] as $key => $product) {
