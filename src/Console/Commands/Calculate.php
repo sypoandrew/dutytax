@@ -44,12 +44,13 @@ class Calculate extends Command
 		
         $progressBar = new ProgressBar($this->output, $variants->count());
 		
+		$d = new Dutytax;
 		foreach($variants as $variant){
-			$d = new Dutytax;
 			$d->calc_duty_paid_price($variant);
-			
 			$progressBar->advance();
 		}
+		#force reindexing
+		$d->checkIndexing(true);
 		
 		$progressBar->finish();
     }

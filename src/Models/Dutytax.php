@@ -22,7 +22,12 @@ class Dutytax
     protected $attributes;
     protected $currency;
     protected $vat_rate;
-	
+    /**
+     * Storage of products that have been processed.
+     *
+     * @var array
+     */
+    protected $products = ['created' => [], 'updated' => []];
 
     /**
      * Create a new command instance.
@@ -173,6 +178,9 @@ class Dutytax
 						}
 					}
 				}
+				
+				$p = $dp->product()->first();
+				$this->addToProducts($p);
 				
 				return $dutypaid;
 			}
