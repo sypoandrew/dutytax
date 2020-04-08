@@ -128,16 +128,16 @@ class Dutytax
 				#Log::debug("$sku duty $duty");
 				#Log::debug("$sku duty paid $dutypaid");
 				
-				$dp = Variant::where('sku', str_replace('IB', 'DP', $inbond_variant->sku))->first();
-				if($dp !== null){
+				$dutypaid_variant = Variant::where('sku', str_replace('IB', 'DP', $inbond_variant->sku))->first();
+				if($dutypaid_variant !== null){
 					#found current duty paid variant - get the price object
-					$dpprice = $dp->getPriceForQuantity(1);
+					$dpprice = $dutypaid_variant->getPriceForQuantity(1);
 					if($dpprice !== null){
 						#Log::debug("$sku current dp price {$dpprice->value_inc}");
 						
-						if($dp->stock_level != $inbond_variant->stock_level){
-							$dp->stock_level = $inbond_variant->stock_level;
-							$dp->save();
+						if($dutypaid_variant->stock_level != $inbond_variant->stock_level){
+							$dutypaid_variant->stock_level = $inbond_variant->stock_level;
+							$dutypaid_variant->save();
 							
 							$add_to_indexing = true;
 						}
@@ -152,15 +152,15 @@ class Dutytax
 					}
 					else{
 						#we shouldn't really be here, but create price anyways...
-						dd($dp);
+						dd($dutypaid_variant);
 						#create the qty price
 						if($set_price){
 							
 							#add the variant price
 							$duty_price = new Price([
-								'variant_id' => $dp->product_id,
-								'product_tax_group_id' => $dp->product_tax_group_id,
-								'product_id' => $dp->product_id,
+								'variant_id' => $dutypaid_variant->id,
+								'product_tax_group_id' => $dutypaid_variant->product_tax_group_id,
+								'product_id' => $dutypaid_variant->product_id,
 								'quantity' => 1,
 								'currency_code' => $this->currency->code,
 							]);
@@ -168,11 +168,11 @@ class Dutytax
 							$duty_price->value = $dutypaid;
 							
 							if($duty_price->save()){
-								#Log::debug('variant price for '.$dp->sku.' created successfully');
+								#Log::debug('variant price for '.$dutypaid_variant->sku.' created successfully');
 								$add_to_indexing = true;
 							}
 							else{
-								Log::warning('variant price for '.$dp->sku.' failed to create');
+								Log::warning('variant price for '.$dutypaid_variant->sku.' failed to create');
 							}
 						}
 					}
@@ -183,20 +183,20 @@ class Dutytax
 					if($set_price){
 						#create DP item
 						
-						$dp = new Variant;
-						$dp->product_id = $inbond_variant->product_id;
-						$dp->stock_level = $inbond_variant->stock_level;
-						$dp->minimum_quantity = $inbond_variant->minimum_quantity;
-						$dp->product_tax_group_id = 1; #taxable
-						$dp->sku = str_replace('IB', 'DP', $inbond_variant->sku);
-						if($dp->save()){
-							$dp->attributes()->syncWithoutDetaching([$attr['Duty Paid'] => ['sort' => $dp->attributes()->count()]]);
+						$dutypaid_variant = new Variant;
+						$dutypaid_variant->product_id = $inbond_variant->product_id;
+						$dutypaid_variant->stock_level = $inbond_variant->stock_level;
+						$dutypaid_variant->minimum_quantity = $inbond_variant->minimum_quantity;
+						$dutypaid_variant->product_tax_group_id = 1; #taxable
+						$dutypaid_variant->sku = str_replace('IB', 'DP', $inbond_variant->sku);
+						if($dutypaid_variant->save()){
+							$dutypaid_variant->attributes()->syncWithoutDetaching([$attr['Duty Paid'] => ['sort' => $dutypaid_variant->attributes()->count()]]);
 							
 							#add the variant price
 							$duty_price = new Price([
-								'variant_id' => $dp->product_id,
-								'product_tax_group_id' => $dp->product_tax_group_id,
-								'product_id' => $dp->product_id,
+								'variant_id' => $dutypaid_variant->id,
+								'product_tax_group_id' => $dutypaid_variant->product_tax_group_id,
+								'product_id' => $dutypaid_variant->product_id,
 								'quantity' => 1,
 								'currency_code' => $this->currency->code,
 							]);
@@ -219,7 +219,7 @@ class Dutytax
 				}
 				
 				if($set_price and $add_to_indexing){
-					$p = $dp->product()->first();
+					$p = $dutypaid_variant->product()->first();
 					$this->addToProducts($p);
 				}
 				
@@ -285,6 +285,16 @@ class Dutytax
 		
 		return $units;
 	}
+
+    /**
+     * Return the totals for items processed
+     *
+     * @return int
+     */
+    public function total_processed()
+    {
+        return count($this->products['created']) + count($this->products['updated']);
+    }
 
     /**
      * Add a product to the queue to be indexed.

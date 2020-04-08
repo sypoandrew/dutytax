@@ -41,19 +41,24 @@ class Calculate extends Command
     public function handle()
     {
         $variants = Variant::where('sku', 'like', '%IB')->get();
-		
-        $progressBar = new ProgressBar($this->output, $variants->count());
-		
+		$progressBar = new ProgressBar($this->output, $variants->count());
 		$d = new Dutytax;
 		foreach($variants as $variant){
 			$d->calc_duty_paid_price($variant);
 			$progressBar->advance();
 		}
+		$processed = $d->total_processed();
 		#force reindexing
 		$d->checkIndexing(true);
-		
 		$progressBar->finish();
-		
-		$this->info('Process complete');
+		if($processed == 1){
+			$this->info('Successfully updated '.$processed.' item');
+		}
+		elseif($processed > 1){
+			$this->info('Successfully updated '.$processed.' items');
+		}
+		else{
+			$this->info('Process complete');
+		}
     }
 }
