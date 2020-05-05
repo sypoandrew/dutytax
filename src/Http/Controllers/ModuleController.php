@@ -40,14 +40,11 @@ class ModuleController extends Controller
 		
 		if($validator->fails()){
 			$res['error'] = $validator->errors()->all();
-			return Redirect::back()->withErrors($res['error']);
+			return redirect()->back()->withErrors($res['error']);
 		}
 		
-		$formdata = $request->json()->all();
-		dd($formdata);
-		
 		$valuestore = Valuestore::make(storage_path('app/settings/Dutytax.json'));
-		$valuestore->put('enabled', $request->input('enabled'));
+		$valuestore->put('enabled', (int) $request->input('enabled'));
 		$valuestore->put('still_wine_rate', $request->input('still_wine_rate'));
 		$valuestore->put('sparkling_wine_rate', $request->input('sparkling_wine_rate'));
 		$valuestore->put('fortified_wine_rate', $request->input('fortified_wine_rate'));
