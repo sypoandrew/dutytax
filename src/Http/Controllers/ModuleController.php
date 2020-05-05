@@ -3,10 +3,10 @@
 namespace Sypo\Dutytax\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Aero\Admin\Facades\Admin;
 use Aero\Admin\Http\Controllers\Controller;
 use Sypo\Dutytax\Models\Dutytax;
+use Spatie\Valuestore\Valuestore;
 
 class ModuleController extends Controller
 {
@@ -40,13 +40,20 @@ class ModuleController extends Controller
 		
 		if($validator->fails()){
 			$res['error'] = $validator->errors()->all();
-			return response()->json($res);
+			return Redirect::back()->withErrors($res['error']);
 		}
 		
 		$formdata = $request->json()->all();
-		Log::debug($formdata);
+		dd($formdata);
 		
-        return redirect()->back()->with('message', 'Settings updated.');
+		$valuestore = Valuestore::make(storage_path('app/settings/Dutytax.json'));
+		$valuestore->put('enabled', $request->input('enabled'));
+		$valuestore->put('still_wine_rate', $request->input('still_wine_rate'));
+		$valuestore->put('sparkling_wine_rate', $request->input('sparkling_wine_rate'));
+		$valuestore->put('fortified_wine_rate', $request->input('fortified_wine_rate'));
+		$valuestore->put('litre_calc', $request->input('litre_calc'));
+		
+		return redirect()->back()->with('message', 'Settings updated.');
     }
     
 	/**
