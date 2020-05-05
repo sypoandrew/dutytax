@@ -29,28 +29,30 @@ class ModuleController extends Controller
      */
     public function update(Request $request)
     {
-		$res = ['success'=>false,'data'=>false,'error'=>[]];
-		
-        $validator = \Validator::make($request->all(), [
-            'still_wine_rate' => 'required|numeric|between:0,99.99',
-            'sparkling_wine_rate' => 'required|numeric|between:0,99.99',
-            'fortified_wine_rate' => 'required|numeric|between:0,99.99',
-            'litre_calc' => 'required|int',
-        ]);
-		
-		if($validator->fails()){
-			$res['error'] = $validator->errors()->all();
-			return redirect()->back()->withErrors($res['error']);
+		if($request->isMethod('post')) {
+			$validator = \Validator::make($request->all(), [
+				'still_wine_rate' => 'required|numeric|between:0,99.99',
+				'sparkling_wine_rate' => 'required|numeric|between:0,99.99',
+				'fortified_wine_rate' => 'required|numeric|between:0,99.99',
+				'litre_calc' => 'required|int',
+			]);
+			
+			if($validator->fails()){
+				return redirect()->back()->withErrors($validator->errors()->all());
+			}
+			
+			$valuestore = Valuestore::make(storage_path('app/settings/Dutytax.json'));
+			$valuestore->put('enabled', (int) $request->input('enabled'));
+			$valuestore->put('still_wine_rate', $request->input('still_wine_rate'));
+			$valuestore->put('sparkling_wine_rate', $request->input('sparkling_wine_rate'));
+			$valuestore->put('fortified_wine_rate', $request->input('fortified_wine_rate'));
+			$valuestore->put('litre_calc', $request->input('litre_calc'));
+			
+			return redirect()->back()->with('message', 'Settings updated.');
 		}
-		
-		$valuestore = Valuestore::make(storage_path('app/settings/Dutytax.json'));
-		$valuestore->put('enabled', (int) $request->input('enabled'));
-		$valuestore->put('still_wine_rate', $request->input('still_wine_rate'));
-		$valuestore->put('sparkling_wine_rate', $request->input('sparkling_wine_rate'));
-		$valuestore->put('fortified_wine_rate', $request->input('fortified_wine_rate'));
-		$valuestore->put('litre_calc', $request->input('litre_calc'));
-		
-		return redirect()->back()->with('message', 'Settings updated.');
+		else{
+			abort(403);
+		}
     }
     
 	/**
