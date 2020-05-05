@@ -48,7 +48,7 @@ class ModuleController extends Controller
 			$valuestore->put('fortified_wine_rate', $request->input('fortified_wine_rate'));
 			$valuestore->put('litre_calc', $request->input('litre_calc'));
 			
-			return redirect()->back()->with('message', 'Settings updated.');
+			return redirect()->back()->with('message', 'Settings updated');
 		}
 		else{
 			abort(403);
@@ -64,6 +64,6 @@ class ModuleController extends Controller
     {
     	\Artisan::call('sypo:dutytax:calculate');
 		
-		return redirect()->back()->with('message', 'You have successfully run the Duty Paid calculator.');
+		return redirect()->back()->with('message', 'You have successfully run the Duty Paid calculator');
     }
 }
