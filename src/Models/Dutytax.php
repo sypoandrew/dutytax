@@ -152,7 +152,7 @@ class Dutytax
 					}
 					else{
 						#we shouldn't really be here, but create price anyways...
-						dd($dutypaid_variant);
+						#dd($dutypaid_variant);
 						#create the qty price
 						if($set_price){
 							
